@@ -1,11 +1,16 @@
 import tkinter as tk
 from tkinter import messagebox
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+# تنظیمات فونت
+FONT_NAME = "Vazir"  
+FONT_SIZE = 12
 
 class Othello:
     def __init__(self, master):
         self.master = master
         master.title("اتللو")
-
         self.board_size = 8
         self.cell_size = 60
         self.sequence = ''
@@ -17,9 +22,16 @@ class Othello:
         self.board = [['' for _ in range(self.board_size)] for _ in range(self.board_size)]
         self.reset_board_state()  # تنظیم وضعیت اولیه تخته
         self.NumOfMoves = 0
-
         self.show_hints = tk.BooleanVar()
-        self.show_hints.set(False)  # پیش فرض راهنما خاموش است
+        self.show_hints.set(False) # پیش فرض راهنما خاموش است
+
+        # تنظیم فونت پیش‌فرض
+        self.default_font = (FONT_NAME, FONT_SIZE)
+
+        # تابع برای اصلاح نمایش متن فارسی
+        def format_persian(text):
+            reshaped_text = arabic_reshaper.reshape(text)
+            return get_display(reshaped_text)
 
         # فریم اصلی
         main_frame = tk.Frame(master)
@@ -29,7 +41,7 @@ class Othello:
         top_labels_frame = tk.Frame(main_frame)
         top_labels_frame.grid(row=0, column=1, columnspan=self.board_size, sticky="ew")
         for j in range(self.board_size):
-            col_label = tk.Label(top_labels_frame, text=chr(ord('A') + j), width=3, anchor="center")
+            col_label = tk.Label(top_labels_frame, text=chr(ord('A') + j), width=3, anchor="center", font=self.default_font)
             col_label.pack(side="left", padx=self.cell_size // 3)  # تنظیم padx برای فاصله
 
         # فریم برای تخته و شماره ردیف‌ها
@@ -38,7 +50,7 @@ class Othello:
 
         # نمایش شماره ردیف‌ها در سمت چپ
         for i in range(self.board_size):
-            row_label = tk.Label(board_frame, text=str(i + 1), height=1)
+            row_label = tk.Label(board_frame, text=str(i + 1), height=1, font=self.default_font)
             row_label.grid(row=i, column=0, sticky="ew")
 
         # Canvas برای تخته بازی
@@ -48,42 +60,40 @@ class Othello:
 
         # نمایش شماره ردیف‌ها در سمت راست
         for i in range(self.board_size):
-            row_label_right = tk.Label(board_frame, text=str(i + 1), height=1)
+            row_label_right = tk.Label(board_frame, text=str(i + 1), height=1, font=self.default_font)
             row_label_right.grid(row=i, column=2, sticky="ew")
 
         # فریم برای دکمه‌ها و انتخاب رنگ
         controls_frame = tk.Frame(main_frame)
         controls_frame.grid(row=1, column=0, sticky="ns", padx=10)
 
-        tk.Label(controls_frame, text="رنگ شما:", pady=5).pack()
-        black_radio = tk.Radiobutton(controls_frame, text="سیاه", variable=self.player_color, value="سیاه")
-        white_radio = tk.Radiobutton(controls_frame, text="سفید", variable=self.player_color, value="سفید")
+        tk.Label(controls_frame, text=format_persian("رنگ شما:"), pady=5, font=self.default_font).pack()
+        black_radio = tk.Radiobutton(controls_frame, text=format_persian("سیاه"), variable=self.player_color, value="سیاه", font=self.default_font)
+        white_radio = tk.Radiobutton(controls_frame, text=format_persian("سفید"), variable=self.player_color, value="سفید", font=self.default_font)
         black_radio.pack()
         white_radio.pack()
 
-        self.undo_button = tk.Button(controls_frame, text="عقب", command=self.undo_move, width=10)
+        self.undo_button = tk.Button(controls_frame, text=format_persian("عقب"), command=self.undo_move, width=10, font=self.default_font)
         self.undo_button.pack(pady=5)
 
-        self.redo_button = tk.Button(controls_frame, text="جلو", command=self.redo_move, state=tk.DISABLED, width=10)
+        self.redo_button = tk.Button(controls_frame, text=format_persian("جلو"), command=self.redo_move, state=tk.DISABLED, width=10, font=self.default_font)
         self.redo_button.pack(pady=5)
 
-        self.hint_check = tk.Checkbutton(controls_frame, text="راهنما", variable=self.show_hints)
+        self.hint_check = tk.Checkbutton(controls_frame, text=format_persian("راهنما"), variable=self.show_hints, font=self.default_font)
         self.hint_check.pack(pady=5)
 
-        self.save_log_button = tk.Button(controls_frame, text="ذخیره حرکات", command=self.save_game_log, width=10)
+        self.save_log_button = tk.Button(controls_frame, text=format_persian("ذخیره حرکات"), command=self.save_game_log, width=10, font=self.default_font)
         self.save_log_button.pack(pady=5)
 
-        self.reset_button = tk.Button(controls_frame, text="شروع مجدد", command=self.reset_game, width=10)
+        self.reset_button = tk.Button(controls_frame, text=format_persian("شروع مجدد"), command=self.reset_game, width=10, font=self.default_font)
         self.reset_button.pack(pady=5)
 
-        # فریم برای حروف ستون‌ها در پایین (فعلا نگه میداریم اگر باز هم مشکل بود حذف میکنیم)
+        # (فعلا نگه میداریم اگر باز هم مشکل بود حذف میکنیم) فریم برای حروف ستون‌ها در پایین
         bottom_labels_frame = tk.Frame(main_frame)
         bottom_labels_frame.grid(row=2, column=1, columnspan=self.board_size, sticky="ew")
         for j in range(self.board_size):
-            col_label = tk.Label(bottom_labels_frame, text=chr(ord('A') + j), width=3, anchor="center")
+            col_label = tk.Label(bottom_labels_frame, text=chr(ord('A') + j), width=3, anchor="center", font=self.default_font)
             col_label.pack(side="left", padx=self.cell_size // 3)
-
-
 
         self.draw_board()
         self.update_valid_moves()
@@ -126,7 +136,6 @@ class Othello:
                                                    center_x + radius, center_y + radius,
                                                    fill=piece, outline="black")
                     self.pieces[(i, j)] = oval
-
         if self.show_hints.get():
             self.draw_hints()
 
@@ -138,46 +147,47 @@ class Othello:
             self.history.append((current_board, self.current_player))
 
         if self.is_valid_move(row, col):
-            if self.NumOfMoves < len(self.history) - 1 :
+            if self.NumOfMoves < len(self.history) - 1:
                 # اگر بعد از Undo حرکت جدید انجام شود، تاریخچه جلو را حذف کنید
                 self.history = self.history[:self.NumOfMoves+1]
                 self.disable_redo()
-            # انجام حرکت
             self.place_piece(row, col)
-            self.animate_flip(row, col)  # استفاده از انیمیشن برای برگرداندن مهره‌ها
+            self.animate_flip(row, col)
             self.switch_player()
             self.update_valid_moves()
             self.enable_redo()
-            self.sequence =  self.sequence[:2*self.NumOfMoves]+chr(ord('A') + col) + str(row + 1)
+            self.sequence = self.sequence[:2*self.NumOfMoves] + chr(ord('A') + col) + str(row + 1)
             self.NumOfMoves += 1
             # ذخیره وضعیت جدید بعد از انجام حرکت
             self.save_state()
         else:
-            messagebox.showinfo("خطا", "این حرکت مجاز نیست.")
+            reshaped_text = arabic_reshaper.reshape("این حرکت مجاز نیست.")
+            bidi_text = get_display(reshaped_text)
+            messagebox.showinfo("خطا", bidi_text)
 
     def save_game_log(self):
         filename = ""
         x = 1
         if self.player_color.get() == "سیاه":
-            if self.NumOfMoves % 2 == 0: # this is not the best method but for the opening it will work with high probability, I think 99.99% or maybe 100%
+            if self.NumOfMoves % 2 == 0: # این بهترین روش نیست اما برای اوپنینگ با احتمال زیاد کار می کند، فکر می کنم 99.99٪ یا شاید 100٪
                 self.NumOfMoves -= 1
             filename = "black_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
                     line = line.strip()  # حذف فضای اضافی اول و انتهای خط
-                    N = min(self.NumOfMoves,len(line)//2)
+                    N = min(self.NumOfMoves, len(line)//2)
                     if line:  # اگر خط خالی نیست
-                        for R in range(N,0,-2):
+                        for R in range(N, 0, -2):
                             if (R == 1 or self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * R - 1:2 * R] != line[2 * R - 1:2 * R]):
-                                messagebox.showinfo("خطا", "دنباله با کتاب مغایرت دارد")
+                                reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
+                                bidi_text = get_display(reshaped_text)
+                                messagebox.showinfo("خطا", bidi_text)
                                 x = 0
-                            if x==0: break
+                            if x == 0: break
                     if x == 0: break
-
         elif self.player_color.get() == "سفید":
             if self.NumOfMoves % 2 == 1:
                 self.NumOfMoves -= 1
-                N = self.NumOfMoves
             filename = "white_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
@@ -186,7 +196,9 @@ class Othello:
                     if line:  # اگر خط خالی نیست
                         for R in range(N, 0, -2):
                             if (self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * R - 1:2 * R] != line[2 * R - 1:2 * R]):
-                                messagebox.showinfo("خطا", "دنباله با کتاب مغایرت دارد")
+                                reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
+                                bidi_text = get_display(reshaped_text)
+                                messagebox.showinfo("خطا", bidi_text)
                                 x = 0
                             if x == 0: break
                     if x == 0: break
@@ -195,10 +207,13 @@ class Othello:
             try:
                 with open(filename, "a", encoding='utf-8') as f:
                     f.write("".join(self.sequence[:2 * self.NumOfMoves]) + "\n")
-                messagebox.showinfo("ذخیره شد", f"دنباله حرکات در فایل {filename} ذخیره شد.")
+                reshaped_text = arabic_reshaper.reshape(f"دنباله حرکات در فایل {filename} ذخیره شد.")
+                bidi_text = get_display(reshaped_text)
+                messagebox.showinfo("ذخیره شد", bidi_text)
             except Exception as e:
-                messagebox.showerror("خطا", f"مشکلی در ذخیره حرکات رخ داد: {e}")
+                reshaped_text = arabic_reshaper.reshape(f"مشکلی در ذخیره حرکات رخ داد: {e}")
         # else:
+                bidi_text = get_display(reshaped_text)
         #   messagebox.showerror("خطا", "رنگ بازیکن مشخص نشده است.")
 
     def save_state(self):
@@ -216,17 +231,15 @@ class Othello:
                 self.enable_undo()
             else:
                 self.disable_undo()
-            if index < (len(self.history)-1) :
+            if index < (len(self.history)-1):
                 self.enable_redo()
             else:
                 self.disable_redo()
-
 
     def undo_move(self):
         if self.NumOfMoves > 0:
             self.NumOfMoves -= 1
             self.load_state(self.NumOfMoves)
-
             # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت زیر به‌روزرسانی کنید:
             # self.sequence = self.sequence[:-2]
 
@@ -234,7 +247,6 @@ class Othello:
         if self.NumOfMoves < (len(self.history)-1):
             self.NumOfMoves += 1
             self.load_state(self.NumOfMoves)
-
             # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت مناسب به‌روزرسانی کنید.
 
     def enable_undo(self):
@@ -297,7 +309,6 @@ class Othello:
         for r, c in pieces_to_flip:
             self.board[r][c] = self.current_player
             if (r, c) in self.pieces:
-                # یک انیمیشن ساده تغییر رنگ برای افکت "آتشین"
                 original_color = opponent
                 target_color = self.current_player
                 steps = 10
@@ -308,7 +319,6 @@ class Othello:
                     self.master.after(i * delay, self._update_piece_color, r, c, intermediate_color)
                 self.master.after((steps + 1) * delay, self._final_piece_color, r, c, target_color)
             else:
-                # ایجاد مهره اگر وجود نداشته باشد
                 x1 = c * self.cell_size
                 y1 = r * self.cell_size
                 x2 = (c + 1) * self.cell_size
@@ -322,7 +332,6 @@ class Othello:
                 self.pieces[(r, c)] = oval
 
     def interpolate_color(self, color1, color2, ratio):
-        # یک تابع ساده برای ترکیب رنگ‌ها
         c1 = self.master.winfo_rgb(color1)
         c2 = self.master.winfo_rgb(color2)
         r = int(c1[0] + (c2[0] - c1[0]) * ratio)
@@ -347,7 +356,7 @@ class Othello:
             for j in range(self.board_size):
                 if self.is_valid_move(i, j):
                     self.valid_moves.append((i, j))
-        self.draw_board()  # برای به‌روزرسانی نشانگرهای راهنما
+        self.draw_board()
 
         if not self.valid_moves:
             self.switch_player()
@@ -360,10 +369,11 @@ class Othello:
                 self.game_over()
                 return
             else:
-                messagebox.showinfo("اطلاع", f"هیچ حرکتی برای {('سیاه' if self.current_player == 'white' else 'سفید')} وجود ندارد. نوبت به {('سیاه' if self.current_player == 'black' else 'سفید')} رسید.")
-
-    def toggle_hints(self):
-        self.draw_board()  # برای نمایش یا حذف نشانگرهای راهنما
+                current = "سیاه" if self.current_player == "black" else "سفید"
+                other = "سفید" if self.current_player == "black" else "سیاه"
+                reshaped_text = arabic_reshaper.reshape(f"هیچ حرکتی برای {other} وجود ندارد. نوبت به {current} رسید.")
+                bidi_text = get_display(reshaped_text)
+                messagebox.showinfo("اطلاع", bidi_text)
 
     def draw_hints(self):
         hint_radius = self.cell_size // 8  # کاهش اندازه دایره‌های راهنما
@@ -379,7 +389,9 @@ class Othello:
         black_count = sum(row.count('black') for row in self.board)
         white_count = sum(row.count('white') for row in self.board)
         winner = "سیاه" if black_count > white_count else "سفید" if white_count > black_count else "مساوی"
-        messagebox.showinfo("پایان بازی", f"بازی تمام شد! نتیجه: سیاه {black_count} - سفید {white_count}. برنده: {winner}")
+        reshaped_text = arabic_reshaper.reshape(f"بازی تمام شد! نتیجه: سیاه {black_count} - سفید {white_count}. برنده: {winner}")
+        bidi_text = get_display(reshaped_text)
+        messagebox.showinfo("پایان بازی", bidi_text)
 
 if __name__ == "__main__":
     with open("white_moves.txt", "a", encoding='utf-8') as f:
