@@ -14,6 +14,7 @@ class Othello:
         self.board_size = 8
         self.cell_size = 60
         self.sequence = ''
+        self.sequence2 = '' # ذخیره ی دنباله ی معادل به دلیل تقارن صفحه
         self.pieces = {}  # برای نگهداری اشیاء گرافیکی مهره‌ها
         self.hint_markers = {}  # برای نگهداری اشیاء گرافیکی نشانگرهای راهنما
         self.history = []  # برای نگهداری وضعیت‌های قبلی بازی برای قابلیت Undo/Redo
@@ -79,7 +80,7 @@ class Othello:
         self.redo_button = tk.Button(controls_frame, text=format_persian("جلو"), command=self.redo_move, state=tk.DISABLED, width=10, font=self.default_font)
         self.redo_button.pack(pady=5)
 
-        self.hint_check = tk.Checkbutton(controls_frame, text=format_persian("راهنما"), variable=self.show_hints, font=self.default_font)
+        self.hint_check = tk.Checkbutton(controls_frame, text=format_persian("راهنما"), command=self.check_hint, variable=self.show_hints, font=self.default_font)
         self.hint_check.pack(pady=5)
 
         self.save_log_button = tk.Button(controls_frame, text=format_persian("ذخیره حرکات"), command=self.save_game_log, width=10, font=self.default_font)
@@ -111,6 +112,7 @@ class Othello:
         self.history = []
         self.NumOfMoves = 0
         self.sequence = ''
+        self.sequence2 = ''
         self.draw_board()
         self.update_valid_moves()
         self.enable_undo()
@@ -157,6 +159,7 @@ class Othello:
             self.update_valid_moves()
             self.enable_redo()
             self.sequence = self.sequence[:2*self.NumOfMoves] + chr(ord('A') + col) + str(row + 1)
+            self.sequence2 = self.sequence2[:2*self.NumOfMoves] + chr(int(68.5 + (68.5 - (ord('A') + col)))) + str(4.5 + (4.5 - (row + 1)))
             self.NumOfMoves += 1
             # ذخیره وضعیت جدید بعد از انجام حرکت
             self.save_state()
@@ -164,6 +167,14 @@ class Othello:
             reshaped_text = arabic_reshaper.reshape("این حرکت مجاز نیست.")
             bidi_text = get_display(reshaped_text)
             messagebox.showinfo("خطا", bidi_text)
+
+    def check_hint(self):
+        if self.show_hints.get():
+            self.draw_hints()
+        else:
+            self.draw_board()
+
+
 
     def save_game_log(self):
         filename = ""
@@ -207,6 +218,7 @@ class Othello:
             try:
                 with open(filename, "a", encoding='utf-8') as f:
                     f.write("".join(self.sequence[:2 * self.NumOfMoves]) + "\n")
+                    f.write("".join(self.sequence2[:2 * self.NumOfMoves]) + "\n")
                 reshaped_text = arabic_reshaper.reshape(f"دنباله حرکات در فایل {filename} ذخیره شد.")
                 bidi_text = get_display(reshaped_text)
                 messagebox.showinfo("ذخیره شد", bidi_text)
@@ -240,14 +252,18 @@ class Othello:
     def undo_move(self):
         if self.NumOfMoves > 0:
             self.NumOfMoves -= 1
+            self.switch_player()
             self.load_state(self.NumOfMoves)
+
             # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت زیر به‌روزرسانی کنید:
             # self.sequence = self.sequence[:-2]
 
     def redo_move(self):
         if self.NumOfMoves < (len(self.history)-1):
             self.NumOfMoves += 1
+            self.switch_player()
             self.load_state(self.NumOfMoves)
+
             # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت مناسب به‌روزرسانی کنید.
 
     def enable_undo(self):
