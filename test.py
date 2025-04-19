@@ -188,12 +188,35 @@ class Othello:
                     line = line.strip()  # حذف فضای اضافی اول و انتهای خط
                     N = min(self.NumOfMoves, len(line)//2)
                     if line:  # اگر خط خالی نیست
-                        for R in range(N, 0, -2):
-                            if (R == 1 or self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * R - 1:2 * R] != line[2 * R - 1:2 * R]):
+                        if (self.sequence[:2] != line[:2]) and (self.sequence2[:2] != line[:2]): # برای اولین حرکت چون حرکت قبلی ای وجود ندارد...
+                            print(self.sequence, line, 1000)
+                            reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
+                            bidi_text = get_display(reshaped_text)
+                            messagebox.showinfo("خطا", bidi_text)
+                            x = 0
+                            break
+                        if self.sequence[:2*self.NumOfMoves] == line[:2*self.NumOfMoves] or self.sequence2[:2*self.NumOfMoves] == line[:2*self.NumOfMoves]:
+                            print(self.sequence, line, 5000)
+                            reshaped_text = arabic_reshaper.reshape("دنباله وجود دارد")
+                            bidi_text = get_display(reshaped_text)
+                            messagebox.showinfo("خطا", bidi_text)
+                            x = 0
+                            break
+
+                        for R in range(N, 2, -2):
+                            if ( self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
+                                print(self.sequence[:2 * (R - 1)],line[:2 * (R - 1)],1000)
+                                print(self.sequence[2 * (R - 1):2 * R],line[2 * (R - 1):2 * R],1000)
+                                print(self.sequence, line, 1000)
                                 reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                                 bidi_text = get_display(reshaped_text)
                                 messagebox.showinfo("خطا", bidi_text)
                                 x = 0
+                            else:
+                                print(self.sequence[:2 * (R - 1)],R)
+                                print(self.sequence)
+                                print(2 * R - 1,2 * R)
+                                print(self.sequence[2 * (R - 1):2 * R])
                             if x == 0: break
                     if x == 0: break
         elif self.player_color.get() == "سفید":
@@ -204,9 +227,15 @@ class Othello:
                 for line in file:
                     line = line.strip()  # حذف فضای اضافی اول و انتهای خط
                     N = min(self.NumOfMoves, len(line) // 2)
+                    if self.sequence[:2*self.NumOfMoves] == line[:2*self.NumOfMoves] or self.sequence2[:2*self.NumOfMoves] == line[:2*self.NumOfMoves]:
+                        reshaped_text = arabic_reshaper.reshape("دنباله وجود دارد")
+                        bidi_text = get_display(reshaped_text)
+                        messagebox.showinfo("خطا", bidi_text)
+                        x = 0
+                        break
                     if line:  # اگر خط خالی نیست
                         for R in range(N, 0, -2):
-                            if (self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * R - 1:2 * R] != line[2 * R - 1:2 * R]):
+                            if (self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
                                 reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                                 bidi_text = get_display(reshaped_text)
                                 messagebox.showinfo("خطا", bidi_text)
