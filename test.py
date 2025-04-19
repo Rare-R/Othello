@@ -4,7 +4,7 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 
 # تنظیمات فونت
-FONT_NAME = "Vazir"  
+FONT_NAME = "Vazir"
 FONT_SIZE = 12
 
 class Othello:
@@ -224,7 +224,8 @@ class Othello:
 
     def load_state(self, index):
         if 0 <= index < len(self.history):
-            self.board, self.current_player = self.history[index]
+            temp_board = [row[:] for row in self.history[index][0]]
+            self.board = temp_board
             self.draw_board()
             self.update_valid_moves()
             if index > 0:
