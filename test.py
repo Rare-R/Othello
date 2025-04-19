@@ -89,6 +89,9 @@ class Othello:
         self.reset_button = tk.Button(controls_frame, text=format_persian("شروع مجدد"), command=self.reset_game, width=10, font=self.default_font)
         self.reset_button.pack(pady=5)
 
+        self.turn_show = tk.Label(controls_frame, text =self.current_player)
+        self.turn_show.pack(pady=5)
+
         # (فعلا نگه میداریم اگر باز هم مشکل بود حذف میکنیم) فریم برای حروف ستون‌ها در پایین
         bottom_labels_frame = tk.Frame(main_frame)
         bottom_labels_frame.grid(row=2, column=1, columnspan=self.board_size, sticky="ew")
@@ -179,24 +182,23 @@ class Othello:
     def save_game_log(self):
         filename = ""
         x = 1
+        number = self.NumOfMoves
         if self.player_color.get() == "سیاه":
             if self.NumOfMoves % 2 == 0: # این بهترین روش نیست اما برای اوپنینگ با احتمال زیاد کار می کند، فکر می کنم 99.99٪ یا شاید 100٪
-                self.NumOfMoves -= 1
+                number -= 1
             filename = "black_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
                     line = line.strip()  # حذف فضای اضافی اول و انتهای خط
-                    N = min(self.NumOfMoves, len(line)//2)
+                    N = min(number, len(line)//2)
                     if line:  # اگر خط خالی نیست
                         if (self.sequence[:2] != line[:2]) and (self.sequence2[:2] != line[:2]): # برای اولین حرکت چون حرکت قبلی ای وجود ندارد...
-                            print(self.sequence, line, 1000)
                             reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                             bidi_text = get_display(reshaped_text)
                             messagebox.showinfo("خطا", bidi_text)
                             x = 0
                             break
-                        if self.sequence[:2*self.NumOfMoves] == line[:2*self.NumOfMoves] or self.sequence2[:2*self.NumOfMoves] == line[:2*self.NumOfMoves]:
-                            print(self.sequence, line, 5000)
+                        if self.sequence[:2*number] == line[:2*number] or self.sequence2[:2*number] == line[:2*number]:
                             reshaped_text = arabic_reshaper.reshape("دنباله وجود دارد")
                             bidi_text = get_display(reshaped_text)
                             messagebox.showinfo("خطا", bidi_text)
@@ -205,29 +207,21 @@ class Othello:
 
                         for R in range(N, 2, -2):
                             if ( self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
-                                print(self.sequence[:2 * (R - 1)],line[:2 * (R - 1)],1000)
-                                print(self.sequence[2 * (R - 1):2 * R],line[2 * (R - 1):2 * R],1000)
-                                print(self.sequence, line, 1000)
                                 reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                                 bidi_text = get_display(reshaped_text)
                                 messagebox.showinfo("خطا", bidi_text)
                                 x = 0
-                            else:
-                                print(self.sequence[:2 * (R - 1)],R)
-                                print(self.sequence)
-                                print(2 * R - 1,2 * R)
-                                print(self.sequence[2 * (R - 1):2 * R])
                             if x == 0: break
                     if x == 0: break
         elif self.player_color.get() == "سفید":
             if self.NumOfMoves % 2 == 1:
-                self.NumOfMoves -= 1
+                number -= 1
             filename = "white_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
                     line = line.strip()  # حذف فضای اضافی اول و انتهای خط
-                    N = min(self.NumOfMoves, len(line) // 2)
-                    if self.sequence[:2*self.NumOfMoves] == line[:2*self.NumOfMoves] or self.sequence2[:2*self.NumOfMoves] == line[:2*self.NumOfMoves]:
+                    N = min(number, len(line) // 2)
+                    if self.sequence[:number] == line[:2*number] or self.sequence2[:2*number] == line[:2*number]:
                         reshaped_text = arabic_reshaper.reshape("دنباله وجود دارد")
                         bidi_text = get_display(reshaped_text)
                         messagebox.showinfo("خطا", bidi_text)
@@ -395,6 +389,7 @@ class Othello:
 
     def switch_player(self):
         self.current_player = 'white' if self.current_player == 'black' else 'black'
+        self.turn_show.config(text = self.current_player )
 
     def update_valid_moves(self):
         self.valid_moves = []
