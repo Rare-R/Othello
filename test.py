@@ -25,6 +25,7 @@ class Othello:
         self.NumOfMoves = 0
         self.show_hints = tk.BooleanVar()
         self.show_hints.set(False) # پیش فرض راهنما خاموش است
+        self.practice_mode = tk.BooleanVar(value=False)  # متغیر برای حالت تمرینی
 
         # تنظیم فونت پیش‌فرض
         self.default_font = (FONT_NAME, FONT_SIZE)
@@ -74,6 +75,10 @@ class Othello:
         black_radio.pack()
         white_radio.pack()
 
+        # افزودن چک‌باکس برای حالت تمرینی
+        self.practice_check = tk.Checkbutton(controls_frame, text=format_persian("حالت تمرینی"), variable=self.practice_mode, font=self.default_font)
+        self.practice_check.pack(pady=5)
+
         self.undo_button = tk.Button(controls_frame, text=format_persian("عقب"), command=self.undo_move, width=10, font=self.default_font)
         self.undo_button.pack(pady=5)
 
@@ -89,10 +94,10 @@ class Othello:
         self.reset_button = tk.Button(controls_frame, text=format_persian("شروع مجدد"), command=self.reset_game, width=10, font=self.default_font)
         self.reset_button.pack(pady=5)
 
-        self.turn_show = tk.Label(controls_frame, text =self.current_player)
+        self.turn_show = tk.Label(controls_frame, text=self.current_player)
         self.turn_show.pack(pady=5)
 
-        # (فعلا نگه میداریم اگر باز هم مشکل بود حذف میکنیم) فریم برای حروف ستون‌ها در پایین
+        # فریم برای حروف ستون‌ها در پایین
         bottom_labels_frame = tk.Frame(main_frame)
         bottom_labels_frame.grid(row=2, column=1, columnspan=self.board_size, sticky="ew")
         for j in range(self.board_size):
@@ -153,19 +158,60 @@ class Othello:
 
         if self.is_valid_move(row, col):
             if self.NumOfMoves < len(self.history) - 1:
-                # اگر بعد از Undo حرکت جدید انجام شود، تاریخچه جلو را حذف کنید
                 self.history = self.history[:self.NumOfMoves+1]
                 self.disable_redo()
+
+            # بررسی حالت تمرینی
+            if self.practice_mode.get():
+                opponent = 'white' if self.current_player == 'black' else 'black'
+                opponent_color = "سفید" if self.current_player == "black" else "سیاه"
+                player_color_english = "black" if self.player_color.get() == "سیاه" else "white"
+                opponent_filename = f"{opponent}_moves.txt"
+
+                # اگر نوبت حریف است و بازیکن رنگ خودش را انتخاب کرده
+                if self.current_player != player_color_english:
+                    move_exists = False
+                    number = self.NumOfMoves // 2
+                    try:
+                        with open(opponent_filename, "r", encoding="utf-8") as file:
+                            for line in file:
+                                line = line.strip()
+                                if line and (self.sequence[:2*number] == line[:2*number] or self.sequence2[:2*number] == line[:2*number]):
+                                    move_exists = True
+                                    break
+                    except FileNotFoundError:
+                        pass
+
+                    if not move_exists:
+                        reshaped_text = arabic_reshaper.reshape(f"حرکت {opponent_color} در کتاب وجود ندارد.")
+                        bidi_text = get_display(reshaped_text)
+                        messagebox.showinfo("اطلاع", bidi_text)
+
             self.place_piece(row, col)
             self.animate_flip(row, col)
-            self.switch_player()
-            self.update_valid_moves()
-            self.enable_redo()
             self.sequence = self.sequence[:2*self.NumOfMoves] + chr(ord('A') + col) + str(row + 1)
             self.sequence2 = self.sequence2[:2*self.NumOfMoves] + chr(int(68.5 + (68.5 - (ord('A') + col)))) + str(4.5 + (4.5 - (row + 1)))
             self.NumOfMoves += 1
-            # ذخیره وضعیت جدید بعد از انجام حرکت
             self.save_state()
+
+            # در حالت تمرینی، حرکت بازیکن به کتاب اضافه می‌شود
+            if self.practice_mode.get() and self.current_player == ("black" if self.player_color.get() == "سیاه" else "white"):
+                filename = "black_moves.txt" if self.player_color.get() == "سیاه" else "white_moves.txt"
+                try:
+                    with open(filename, "a", encoding='utf-8') as f:
+                        f.write("".join(self.sequence[:2 * self.NumOfMoves]) + "\n")
+                        f.write("".join(self.sequence2[:2 * self.NumOfMoves]) + "\n")
+                    reshaped_text = arabic_reshaper.reshape(f"حرکت به {filename} اضافه شد.")
+                    bidi_text = get_display(reshaped_text)
+                    messagebox.showinfo("ذخیره شد", bidi_text)
+                except Exception as e:
+                    reshaped_text = arabic_reshaper.reshape(f"مشکلی در ذخیره حرکات رخ داد: {e}")
+                    bidi_text = get_display(reshaped_text)
+                    messagebox.showerror("خطا", bidi_text)
+
+            self.switch_player()
+            self.update_valid_moves()
+            self.enable_redo()
         else:
             reshaped_text = arabic_reshaper.reshape("این حرکت مجاز نیست.")
             bidi_text = get_display(reshaped_text)
@@ -177,22 +223,20 @@ class Othello:
         else:
             self.draw_board()
 
-
-
     def save_game_log(self):
         filename = ""
         x = 1
         number = self.NumOfMoves
         if self.player_color.get() == "سیاه":
-            if self.NumOfMoves % 2 == 0: # این بهترین روش نیست اما برای اوپنینگ با احتمال زیاد کار می کند، فکر می کنم 99.99٪ یا شاید 100٪
+            if self.NumOfMoves % 2 == 0:
                 number -= 1
             filename = "black_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
-                    line = line.strip()  # حذف فضای اضافی اول و انتهای خط
+                    line = line.strip()
                     N = min(number, len(line)//2)
-                    if line:  # اگر خط خالی نیست
-                        if (self.sequence[:2] != line[:2]) and (self.sequence2[:2] != line[:2]): # برای اولین حرکت چون حرکت قبلی ای وجود ندارد...
+                    if line:
+                        if (self.sequence[:2] != line[:2]) and (self.sequence2[:2] != line[:2]):
                             reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                             bidi_text = get_display(reshaped_text)
                             messagebox.showinfo("خطا", bidi_text)
@@ -204,9 +248,8 @@ class Othello:
                             messagebox.showinfo("خطا", bidi_text)
                             x = 0
                             break
-
                         for R in range(N, 2, -2):
-                            if ( self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
+                            if (self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
                                 reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
                                 bidi_text = get_display(reshaped_text)
                                 messagebox.showinfo("خطا", bidi_text)
@@ -219,7 +262,7 @@ class Othello:
             filename = "white_moves.txt"
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
-                    line = line.strip()  # حذف فضای اضافی اول و انتهای خط
+                    line = line.strip()
                     N = min(number, len(line) // 2)
                     if self.sequence[:number] == line[:2*number] or self.sequence2[:2*number] == line[:2*number]:
                         reshaped_text = arabic_reshaper.reshape("دنباله وجود دارد")
@@ -227,7 +270,7 @@ class Othello:
                         messagebox.showinfo("خطا", bidi_text)
                         x = 0
                         break
-                    if line:  # اگر خط خالی نیست
+                    if line:
                         for R in range(N, 0, -2):
                             if (self.sequence[:2 * (R - 1)] == line[:2 * (R - 1)]) and (self.sequence[2 * (R - 1):2 * R] != line[2 * (R - 1):2 * R]):
                                 reshaped_text = arabic_reshaper.reshape("دنباله با کتاب مغایرت دارد")
@@ -247,9 +290,8 @@ class Othello:
                 messagebox.showinfo("ذخیره شد", bidi_text)
             except Exception as e:
                 reshaped_text = arabic_reshaper.reshape(f"مشکلی در ذخیره حرکات رخ داد: {e}")
-        # else:
                 bidi_text = get_display(reshaped_text)
-        #   messagebox.showerror("خطا", "رنگ بازیکن مشخص نشده است.")
+                messagebox.showerror("خطا", bidi_text)
 
     def save_state(self):
         current_board = [row[:] for row in self.board]
@@ -278,16 +320,11 @@ class Othello:
             self.switch_player()
             self.load_state(self.NumOfMoves)
 
-            # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت زیر به‌روزرسانی کنید:
-            # self.sequence = self.sequence[:-2]
-
     def redo_move(self):
         if self.NumOfMoves < (len(self.history)-1):
             self.NumOfMoves += 1
             self.switch_player()
             self.load_state(self.NumOfMoves)
-
-            # در صورت نیاز، می‌توانید self.sequence رو نیز به صورت مناسب به‌روزرسانی کنید.
 
     def enable_undo(self):
         self.undo_button.config(state=tk.NORMAL)
@@ -389,7 +426,7 @@ class Othello:
 
     def switch_player(self):
         self.current_player = 'white' if self.current_player == 'black' else 'black'
-        self.turn_show.config(text = self.current_player )
+        self.turn_show.config(text=self.current_player)
 
     def update_valid_moves(self):
         self.valid_moves = []
